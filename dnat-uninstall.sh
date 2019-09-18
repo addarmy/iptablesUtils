@@ -1,27 +1,25 @@
-#! /bin/bash
-
-# 删除本机上指定端口的转发规则，会删除对应的PREROUTING和POSTROUTING规则
-# bash rmPreNatRule.sh $localPort
-
-red="\033[31m"
-black="\033[0m"
-
-#要删除的转发端口
-localport=$1
-if [  "$localport"  =  "" ];then
-    echo -n "要删除转发的本地端口:" ;read localport
-fi
-
-if [ $USER = "root" ];then
-	echo "本脚本用途："
-    echo "删除本机上指定端口的转发规则，会删除对应的PREROUTING和POSTROUTING规则"
-    echo
-else
+if [ $USER != "root" ];then
     echo   -e "${red}请使用root用户执行本脚本!! ${black}"
     exit 1
 fi
 
+#要删除的转发端口
+localport=$1
+if [  "$localport"  =  "" ];then
+    echo -n "要删除的ddns转发的本地端口:" ;read localport
+fi
 
+# 判断端口是否为数字
+echo "$localport"|[ -n "`sed -n '/^[0-9][0-9]*$/p'`" ] && valid=true
+if [ "$valid" = "" ];then
+   echo  -e "本地端口请输入数字！！"
+   exit 1;
+fi
+
+service dnat$localport stop
+systemctl disable  dnat$localport
+rm -f /lib/systemd/system/dnat$localport.service
+rm -f /etc/dnat/$localport.conf 
 
 arr1=(`iptables -L PREROUTING -n -t nat --line-number |grep DNAT|grep "dpt:$localport "|sort -r|awk '{print $1,$3,$9}'|tr " " ":"|tr "\n" " "`)
 for cell in ${arr1[@]}  # cell= 1:tcp:to:8.8.8.8:543

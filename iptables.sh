@@ -9,7 +9,7 @@ if [ $USER = "root" ];then
     echo "本脚本用途："
     echo "设置本机tcp和udp端口转发"
     echo  "原始iptables仅支持ip地址，该脚本增加域名支持（要求域名指向的主机ip不变）"
-    echo "若要支持ddns，请使用 https://raw.githubusercontent.com/arloor/iptablesUtils/master/dnat-install.sh;"
+    echo -e "若要支持ddns，请使用 ${red}dnat-install.sh${black}"
     echo
 else
     echo   -e "${red}请使用root用户执行本脚本!! ${black}"
@@ -47,7 +47,7 @@ else
     yum install -y wget bind-utils &> /dev/null  #为centos系列安装依赖
     apt install -y wget dnsutils  &> /dev/null   #为debain系列安装依赖
     echo "Done"
-    remote=$(host -t a  $remotehost|grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}")
+    remote=$(host -t a  $remotehost|grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}"|head -1)
 fi
 if [ "$remote" = "" ];then
     echo -e "${red}无法解析remotehost，请填写正确的remotehost！${black}"
@@ -106,3 +106,9 @@ iptables -t nat -A PREROUTING -p udp --dport $localport -j DNAT --to-destination
 iptables -t nat -A POSTROUTING -p tcp -d $remote --dport $remoteport -j SNAT --to-source $local
 iptables -t nat -A POSTROUTING -p udp -d $remote --dport $remoteport -j SNAT --to-source $local
 echo 端口转发成功
+echo "###########################################################"
+echo  -e "当前NAT表如下：(仅供专业人士debug用)"
+iptables -L PREROUTING -n -t nat
+iptables -L POSTROUTING -n -t nat
+echo "###########################################################"
+
